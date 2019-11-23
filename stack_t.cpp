@@ -31,7 +31,7 @@ const char* errMessage[] = {
 
 
 
-elem_t * _StackGetIthPointer (int i, const elem_t * const data) {
+elem_t * _StackGetIthPointer (int i, const elem_t *const data) {
     assert (data);
     assert (i >= 0);
 
@@ -49,7 +49,7 @@ int _StackGetHash (const Stack_t *stk) {
 }
 
 
-int _StackOK (Stack_t* stk) {
+int _StackOK (Stack_t *stk) {
     if (stk == NULL)
         return E_NULL_PTR_STACK;
 
@@ -98,7 +98,7 @@ int _StackOK (Stack_t* stk) {
 }
 
 
-void _StackDump (Stack_t* stk) {
+void _StackDump (const Stack_t *stk) {
 
     const char *filename = "dump.log";
 

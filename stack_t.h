@@ -55,9 +55,9 @@ elem_t * _StackGetIthPointer (int i, const elem_t * const data);
 
 int _StackGetHash (const Stack_t *stk);
 
-int _StackOK (Stack_t* stk);
+int _StackOK (Stack_t *stk);
 
-void _StackDump (Stack_t* stk);
+void _StackDump (const Stack_t *stk);
 
 int StackFree (Stack_t *stk);
 
