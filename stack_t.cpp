@@ -25,7 +25,7 @@ const char* errMessage[] = {
         "second stack canary is modified",
         "first data canary is modified",
         "second data canary is modified",
-        "hash-sum has changed unexpectedly",
+        "hash-sum has changed unexpectedly"
 };
 
 
@@ -168,12 +168,10 @@ void _StackDump (const Stack_t *stk) {
 }
 
 
-int StackFree (Stack_t *stk) {
+void StackFree (Stack_t *stk) {
     STACK_OK(stk);
 
     _StackFree(stk);
-
-    return 0;
 }
 #endif
 
@@ -189,9 +187,9 @@ int _StackConstruct (Stack_t *stk, const char *name, int max) {
     stk->canary1 = CANARY;
 #endif
 
-    size_t nameLen = strlen (name);
+    size_t nameLen = strlen (name) + 1;
 
-    stk->name = (char *)calloc (nameLen + 1, sizeof(char));
+    stk->name = (char *)calloc (nameLen, sizeof(char));
 
     if (stk->name == NULL) {
         printf ("The attempt to allocate memory for the stack name failed. "
@@ -200,7 +198,6 @@ int _StackConstruct (Stack_t *stk, const char *name, int max) {
     }
 
     memcpy (stk->name, name, nameLen);
-    stk->name[nameLen] = '\0';
 
 
     stk->maxSize = max;
@@ -240,7 +237,7 @@ int _StackConstruct (Stack_t *stk, const char *name, int max) {
 }
 
 
-int _StackFree (Stack_t *stk) {
+void _StackFree (Stack_t *stk) {
 
     assert (stk);
 
@@ -251,8 +248,6 @@ int _StackFree (Stack_t *stk) {
         free (stk->data);
 
     free (stk);
-
-    return 0;
 }
 
 int _StackResize (Stack_t *stk, int newSize) {
@@ -265,7 +260,7 @@ int _StackResize (Stack_t *stk, int newSize) {
 
     if (newSize < stk->size) {
         printf ("Invalid newSize>: %d\n", newSize);
-        exit (1);
+        return 1;
     }
 
 #ifdef DEBUG

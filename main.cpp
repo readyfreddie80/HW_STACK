@@ -27,6 +27,7 @@ int unitTest() {
     return 0;
 }
 
+#ifdef DEBUG
 int unitTestsVerify(int nCase) {
     int *a = (int *)calloc (1, sizeof (int));
     Stack_t *stk = (Stack_t *)calloc (1, sizeof (Stack_t));
@@ -89,7 +90,7 @@ int unitTestsVerify(int nCase) {
     return 0;
 }
 
-
+#endif
 
 int main() {
 
