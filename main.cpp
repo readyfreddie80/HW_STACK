@@ -94,7 +94,6 @@ int unitTestsVerify(int nCase) {
 #endif
 
 int main() {
-
     unitTest();
 #ifdef DEBUG
     unitTestsVerify(10);

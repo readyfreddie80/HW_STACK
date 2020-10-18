@@ -11,6 +11,7 @@
 
 typedef int elem_t;      /// stack's data type
 
+#define DEBUG
 #ifdef DEBUG
 
 #define STACK_OK(stack) if (_StackOK(stack) != 0) {_StackDump(stack); _StackFree(stack); assert(!"ok");}

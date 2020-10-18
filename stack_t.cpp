@@ -63,43 +63,35 @@ int _StackOK (Stack_t *stk) {
     }
 
     if (stk->data == nullptr) {
-        stk->errNo = E_NULL_PTR_DATA;
-        return E_NULL_PTR_DATA;
+        return stk->errNo = E_NULL_PTR_DATA;
     }
 
     if (stk->maxSize == 0) {
-        stk->errNo = E_INVALID_MAXSIZE;
-        return E_INVALID_MAXSIZE;
+        return stk->errNo = E_INVALID_MAXSIZE;
     }
 
     if (stk->size > stk->maxSize) {
-        stk->errNo = E_INVALID_SIZE;
-        return E_INVALID_SIZE;
+        return stk->errNo = E_INVALID_SIZE;
     }
 
     if (stk->canary1 != CANARY) {
-        stk->errNo = E_WRONG_CANARY1;
-        return E_WRONG_CANARY1;
+        return stk->errNo = E_WRONG_CANARY1;
     }
 
     if (stk->canary2 != CANARY) {
-        stk->errNo = E_WRONG_CANARY2;
-        return E_WRONG_CANARY2;
+        return stk->errNo = E_WRONG_CANARY2;
     }
 
     if (_GetFirsDataCanary(stk)!= CANARY) {
-        stk->errNo = E_WRONG_DATA_CANARY1;
-        return E_WRONG_DATA_CANARY1;
+        return stk->errNo = E_WRONG_DATA_CANARY1;
     }
 
     if (_GetSecondDataCanary(stk)!= CANARY) {
-        stk->errNo = E_WRONG_DATA_CANARY2;
-        return E_WRONG_DATA_CANARY2;
+        return stk->errNo = E_WRONG_DATA_CANARY2;
     }
 
     if (_StackGetHash(stk) != stk->hash) {
-        stk->errNo = E_INVALID_HASH;
-        return E_INVALID_HASH;
+        return stk->errNo = E_INVALID_HASH;
     }
 
     return OK;
@@ -166,7 +158,10 @@ void _StackDump (const Stack_t *stk) {
 
         const char *indent = "   ";
         if (stk->data != nullptr) {
-            fprintf(fdump, "canary1 = %llx\n", _GetFirsDataCanary(stk));
+            fprintf(
+                    fdump,
+                    "canary1 = %llx\n",
+                    _GetFirsDataCanary(stk));
             for (size_t i = 0; i < stk->maxSize; i++) {
                 if (i < stk->size) {
                     fprintf(
@@ -185,7 +180,10 @@ void _StackDump (const Stack_t *stk) {
                             *_StackGetIthPointer(i, stk->data));
                 }
             }
-            fprintf(fdump, "canary2 = %llx\n", _GetSecondDataCanary(stk));
+            fprintf(
+                    fdump,
+                    "canary2 = %llx\n",
+                    _GetSecondDataCanary(stk));
         }
         else {
             fprintf (
