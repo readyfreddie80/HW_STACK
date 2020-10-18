@@ -2,11 +2,12 @@
 #include <cstdlib>
 
 #include "stack_t.h"
+#include "stdfuncs_wrappers.h"
 
 int unitTest() {
 
     int maxSize = 1000;
-    Stack_t *stk = (Stack_t *)calloc (1, sizeof (Stack_t));
+    Stack_t *stk = (Stack_t *)calloc_wrapper (1, sizeof (*stk));
 
     StackConstruct (stk, 1);
 
@@ -38,22 +39,22 @@ int unitTestsVerify(int nCase) {
         StackPush(stk, i);
     }
 
-    Stack_t *stk1 = NULL;
+    Stack_t *stk1 = nullptr;
 
     switch (nCase) {
         case 1:
             StackConstruct (stk1, 1);
             break;
         case 2:
-            stk->data = NULL;
+            stk->data = nullptr;
             StackPush(stk, 1);
             break;
         case 3:
-            stk->maxSize = -1;
+            stk->maxSize = 0;
             StackPush(stk, 1);
             break;
         case 4:
-            stk->size = -1;
+            stk->size = 999;
             StackPush(stk, 1);
             break;
         case 5:
@@ -95,8 +96,10 @@ int unitTestsVerify(int nCase) {
 int main() {
 
     unitTest();
-
-    //unitTestsVerify(10);
+#ifdef DEBUG
+    unitTestsVerify(10);
+#endif
+    printf("OK!!!");
 
     return 0;
 }

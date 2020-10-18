@@ -5,27 +5,31 @@
 #ifndef TASK3_STACK_STACK_T_H
 #define TASK3_STACK_STACK_T_H
 
-#define DEBUG
+#include <cstddef>
+
 #define StackConstruct(stack, max) _StackConstruct(stack, #stack, max)
-#define STACK_OK(stack) if (_StackOK(stack) != 0) {_StackDump(stack); _StackFree(stack); assert(!"ok");}
 
-
-typedef int elem_t;                //stack's data type
-
+typedef int elem_t;      /// stack's data type
 
 #ifdef DEBUG
-// stack errors.
+
+#define STACK_OK(stack) if (_StackOK(stack) != 0) {_StackDump(stack); _StackFree(stack); assert(!"ok");}
+
+typedef long long hash_t;   /// stack's hash type
+typedef long long canary_t; /// stack's canary type
+
+//// Stack errors
 enum Err {
-    OK,                   // stack is valid;
-    E_NULL_PTR_STACK,     // stack is pointed by NULL;
-    E_NULL_PTR_DATA,      // data is pointed by NULL;
-    E_INVALID_SIZE,       // size is invalid;
-    E_INVALID_MAXSIZE,    // maxSize is invalid;
-    E_WRONG_CANARY1,      // canary1 is modified;
-    E_WRONG_CANARY2,      // canary2 is modified;
-    E_WRONG_DATA_CANARY1, // first data canary is modified;
-    E_WRONG_DATA_CANARY2, // second data canary is modified;
-    E_INVALID_HASH        // hash-sum has changed unexpectedly.
+    OK,                   /// stack is valid;
+    E_NULL_PTR_STACK,     /// stack is pointed by NULL;
+    E_NULL_PTR_DATA,      /// data is pointed by NULL;
+    E_INVALID_SIZE,       /// size is invalid;
+    E_INVALID_MAXSIZE,    /// maxSize is invalid;
+    E_WRONG_CANARY1,      /// canary1 is modified;
+    E_WRONG_CANARY2,      /// canary2 is modified;
+    E_WRONG_DATA_CANARY1, /// first data canary is modified;
+    E_WRONG_DATA_CANARY2, /// second data canary is modified;
+    E_INVALID_HASH        /// hash-sum has changed unexpectedly.
 };
 
 #endif
@@ -34,21 +38,24 @@ enum Err {
 	Stack of elem_t built on array
 
     Has operations Pop and Push
+
+    To use stack you have to typedef elem_t before
 */
 struct Stack_t {
 #ifdef DEBUG
-    long canary1; // first canary
+    canary_t canary1; /// first canary
 #endif
 
-    char *name;   // stack's name
-    int maxSize;  // maximum capacity
-    int size;     // current size
-    elem_t *data; // buffer
+
+    char   *name;    /// stack's name
+    size_t  maxSize; /// maximum capacity
+    size_t  size;    /// current size
+    elem_t *data;    /// buffer
 
 #ifdef DEBUG
-    enum Err errNo; // error occured number
-    long int hash;  // hash sum
-    long canary2;   // second canary
+    enum Err errNo;     /// error occured number
+    hash_t   hash;      /// hash sum
+    canary_t canary2;   /// second canary
 #endif
 };
 
@@ -59,11 +66,15 @@ struct Stack_t {
     Gives the pointer at the i-th (i = 0, ..., size - 1) data element of data array for the case
     if there's a canary of type long in the beginning of data array
     Has to be used only in DEBUG mode
-    \param[in] i index of element (i = 0, ..., size - 1)
+
+    \param[in] i    index of element (i = 0, ..., size - 1)
     \param[in] data pointer at the beginning of the data array
+
     \return pointer at the i-th (i = 0, ..., size - 1) data element of data array
  */
-elem_t * _StackGetIthPointer (int i, const elem_t *data);
+elem_t *_StackGetIthPointer (
+        size_t        i,
+        const elem_t *data);
 
 /*!
     Calculates hash-sum of data elements of data array,
@@ -71,7 +82,7 @@ elem_t * _StackGetIthPointer (int i, const elem_t *data);
     \param[in] stk pointer at stack
     \return hash-sum of data elements of data array
  */
-int _StackGetHash (const Stack_t *stk);
+hash_t _StackGetHash (const Stack_t *stk);
 
 /*!
     Stack verificator
@@ -114,7 +125,10 @@ void StackFree (Stack_t *stk);
    \retuen 1 if there was an error
            0 if the construction succeeded
  */
-int _StackConstruct (Stack_t *stk, const char *name, int max);
+int _StackConstruct (
+            Stack_t    *stk,
+            const char *name,
+            size_t      max);
 
 /*!
   Distracts stack
@@ -134,7 +148,9 @@ void _StackFree (Stack_t *stk);
    \retuen 1 if there was an error
            0 if the resize succeeded
  */
-int _StackResize (Stack_t *stk, int newSize);
+int _StackResize (
+        Stack_t *stk,
+        size_t   newSize);
 
 /*!
   Push a data element on the top of the stack
@@ -145,7 +161,9 @@ int _StackResize (Stack_t *stk, int newSize);
    \retuen 1 if there was an error
            0 if the push succeeded
  */
-int StackPush (Stack_t *stk, elem_t data);
+int StackPush (
+        Stack_t *stk,
+        elem_t   data);
 
 
 /*!
@@ -157,7 +175,9 @@ int StackPush (Stack_t *stk, elem_t data);
    \retuen 1 if there was an error
            0 if the pop succeeded
  */
-int StackPop (Stack_t *stk, elem_t *elem);
+int StackPop (
+        Stack_t *stk,
+        elem_t  *elem);
 
 
 #endif //TASK3_STACK_STACK_T_H

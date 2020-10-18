@@ -3,6 +3,7 @@
 //
 
 #include "stack_t.h"
+#include "stdfuncs_wrappers.h"
 #include <iostream>
 #include <assert.h>
 #include <string.h>
@@ -10,12 +11,10 @@
 
 #ifdef DEBUG
 
+const canary_t CANARY = 0xDED0BED; /// canary value
+const elem_t   POISON = 123;       /// poisonous value
 
-const long CANARY = 0xDED0BED;     // canary value
-elem_t POISON     = (elem_t)(123); // poisonous value.
-
-
-const char* errMessage[] = {
+const char* ERR_MSG[10] = {
         "stack is OK",
         "stack is pointed by NULL",
         "data is pointed by NULL",
@@ -30,40 +29,50 @@ const char* errMessage[] = {
 
 
 
-
-elem_t * _StackGetIthPointer (int i, const elem_t *const data) {
+elem_t * _StackGetIthPointer (
+        size_t       i,
+        const elem_t *data) {
     assert (data);
-    assert (i >= 0);
 
-    return (elem_t *)((long *)data + 1) +  i;
+    return (elem_t *)((canary_t *)data + 1) +  i;
 }
 
-int _StackGetHash (const Stack_t *stk) {
+hash_t _StackGetHash (const Stack_t *stk) {
     assert (stk);
     assert (stk->data);
 
-    int hash = 0;
-    for (int i = 1; i <= stk->maxSize; i++)
-        hash += ((int)*_StackGetIthPointer(i - 1, stk->data)) * i;
+    hash_t hash = 0;
+    for (size_t i = 1; i <= stk->maxSize; i++) {
+        hash += (hash_t)*_StackGetIthPointer(i - 1, stk->data) * i;
+    }
     return hash;
 }
 
 
-int _StackOK (Stack_t *stk) {
-    if (stk == NULL)
-        return E_NULL_PTR_STACK;
+canary_t _GetFirsDataCanary(const Stack_t *stk) {
+    return *((canary_t *)(stk->data));
+}
 
-    if (stk->data == NULL) {
+canary_t _GetSecondDataCanary(const Stack_t *stk) {
+    return *((canary_t *)_StackGetIthPointer(stk->maxSize, stk->data));
+}
+
+int _StackOK (Stack_t *stk) {
+    if (stk == nullptr) {
+        return E_NULL_PTR_STACK;
+    }
+
+    if (stk->data == nullptr) {
         stk->errNo = E_NULL_PTR_DATA;
         return E_NULL_PTR_DATA;
     }
 
-    if (stk->maxSize <= 0) {
+    if (stk->maxSize == 0) {
         stk->errNo = E_INVALID_MAXSIZE;
         return E_INVALID_MAXSIZE;
     }
 
-    if (stk->size < 0 || stk->size > stk->maxSize) {
+    if (stk->size > stk->maxSize) {
         stk->errNo = E_INVALID_SIZE;
         return E_INVALID_SIZE;
     }
@@ -78,13 +87,12 @@ int _StackOK (Stack_t *stk) {
         return E_WRONG_CANARY2;
     }
 
-    if (*((long*)(stk->data)) != CANARY) {
+    if (_GetFirsDataCanary(stk)!= CANARY) {
         stk->errNo = E_WRONG_DATA_CANARY1;
         return E_WRONG_DATA_CANARY1;
     }
 
-
-    if (*((long*)_StackGetIthPointer(stk->maxSize, stk->data)) != CANARY) {
+    if (_GetSecondDataCanary(stk)!= CANARY) {
         stk->errNo = E_WRONG_DATA_CANARY2;
         return E_WRONG_DATA_CANARY2;
     }
@@ -102,69 +110,93 @@ void _StackDump (const Stack_t *stk) {
 
     const char *filename = "dump.log";
 
-    FILE *fdump = fopen (filename, "a+");
+    FILE *fdump = fopen_wrapper (filename, "a+");
+    EXIT_IF_ERROR_OCCURRED();
 
-    if (fdump == NULL) {
-        printf ("Can't open file %s", filename);
-        exit(1);
-    }
-
-
-    if (stk == NULL)
-        fprintf (fdump, "!!!ERROR <%d>: %s !!!\n",
+    if (stk == nullptr)
+        fprintf (
+                fdump,
+                "!!!ERROR <%d>: %s !!!\n",
                  E_NULL_PTR_STACK,
-                 errMessage[E_NULL_PTR_STACK]);
+                 ERR_MSG[E_NULL_PTR_STACK]);
     else {
-
-        if (stk->errNo == OK)
-            fprintf (fdump, "Stack is OK\n");
-        else
-            fprintf (fdump, "!!!ERROR <%d>: %s !!!\n",
-                     stk->errNo,
-                     errMessage[stk->errNo]);
-
-        if (stk->name == NULL)
-            fprintf (fdump, "Stack_t \"!!!INVALID NAME!!!\"");
-        else
-            fprintf (fdump, "Stack_t \"%s\"",
-                     stk->name);
-
-
-        fprintf (fdump, " [%p] {\n"
-                        "  canary1          = %lx\n"
-                        "  current size     = %d\n"
-                        "  maximum capacity = %d\n"
-                        "  errno            = %d\n"
-                        "  hash             = %ld\n"
-                        "  canary2          = %lx\n"
-                        "  data[%d]         = [%p]:\n",
-                 stk,
-                 stk->canary1,
-                 stk->size,
-                 stk->maxSize,
-                 stk->errNo,
-                 stk->hash,
-                 stk->canary2,
-                 stk->size,
-                 stk->data);
-
-
-        if (stk->data != NULL) {
-            for (int i = 0; i < stk->maxSize; i++) {
-                if (i < stk->size)
-                    fprintf(fdump, "   *[%d] = %d\n", i, *_StackGetIthPointer(i, stk->data));
-                else
-                    fprintf(fdump, "    [%d] = %d\n", i, *_StackGetIthPointer(i, stk->data));
-            }
+        if (stk->errNo == OK) {
+            fprintf(
+                    fdump,
+                    "Stack is OK\n");
         }
-        else
-            fprintf (fdump, "   NO DATA\n");
+        else {
+            fprintf(
+                    fdump,
+                    "!!!ERROR <%d>: %s !!!\n",
+                    stk->errNo,
+                    ERR_MSG[stk->errNo]);
+        }
+        if (stk->name == nullptr) {
+            fprintf(
+                    fdump,
+                    "Stack_t \"!!!INVALID NAME!!!\"");
+        }
+        else {
+            fprintf(
+                    fdump,
+                    "Stack_t \"%s\"",
+                    stk->name);
+        }
 
+        fprintf (
+                fdump,
+                " [%p] {\n"
+                "  canary1          = %llx\n"
+                "  current size     = %zu\n"
+                "  maximum capacity = %zu\n"
+                "  errno            = %d\n"
+                "  hash             = %lld\n"
+                "  canary2          = %llx\n"
+                "  data[%zu]         = [%p]:\n",
+                stk,
+                stk->canary1,
+                stk->size,
+                stk->maxSize,
+                stk->errNo,
+                stk->hash,
+                stk->canary2,
+                stk->size,
+                stk->data);
 
+        const char *indent = "   ";
+        if (stk->data != nullptr) {
+            fprintf(fdump, "canary1 = %llx\n", _GetFirsDataCanary(stk));
+            for (size_t i = 0; i < stk->maxSize; i++) {
+                if (i < stk->size) {
+                    fprintf(
+                            fdump,
+                            "%s*[%zu] = %d\n",
+                            indent,
+                            i,
+                            *_StackGetIthPointer(i, stk->data));
+                }
+                else {
+                    fprintf(
+                            fdump,
+                            "%s [%zu] = %d\n",
+                            indent,
+                            i,
+                            *_StackGetIthPointer(i, stk->data));
+                }
+            }
+            fprintf(fdump, "canary2 = %llx\n", _GetSecondDataCanary(stk));
+        }
+        else {
+            fprintf (
+                    fdump,
+                    "%sNO DATA\n",
+                    indent);
+        }
         fprintf (fdump, "}\n");
     }
 
-    fclose (fdump);
+    fclose_wrapper (fdump);
 }
 
 
@@ -178,10 +210,13 @@ void StackFree (Stack_t *stk) {
 
 
 
-int _StackConstruct (Stack_t *stk, const char *name, int max) {
-    assert (stk != NULL);
-    assert (name != NULL);
-    assert (max > 0);
+int _StackConstruct (
+        Stack_t    *stk,
+        const char *name,
+        size_t      max) {
+    assert (stk  != nullptr);
+    assert (name != nullptr);
+    assert (max  != 0);
 
 #ifdef DEBUG
     stk->canary1 = CANARY;
@@ -189,39 +224,36 @@ int _StackConstruct (Stack_t *stk, const char *name, int max) {
 
     size_t nameLen = strlen (name) + 1;
 
-    stk->name = (char *)calloc (nameLen, sizeof(char));
+    stk->name = (char *) calloc_wrapper(nameLen, sizeof(*(stk->name)));
 
-    if (stk->name == NULL) {
-        printf ("The attempt to allocate memory for the stack name failed. "
-                "Please, try shorter name\n");
-        return  1;
+    if (stk->name == nullptr) {
+        FPRINTF_ERROR ("The attempt to allocate memory for the stack name failed. "
+                       "Please, try shorter name\n");
+        return 1;
     }
 
     memcpy (stk->name, name, nameLen);
-
 
     stk->maxSize = max;
     stk->size    = 0;
 
 #ifdef DEBUG
-    stk->data = (elem_t *)calloc (1, 2 * sizeof (CANARY) + max * sizeof (elem_t));
+    stk->data = (elem_t *)calloc (1, 2 * sizeof (CANARY) + max * sizeof (*(stk->data)));
 #else
-    stk->data = (elem_t *)calloc (max, sizeof (elem_t));
+    stk->data = (elem_t *)calloc (max, sizeof (*(stk->data)));
 #endif
 
-    if (stk->data == NULL) {
-        printf ("The attempt to allocate memory for the stack buf failed. "
-                "Please, try smaller maximum size\n");
-
-        free(stk->name);
-        return  1;
+    if (stk->data == nullptr) {
+        FPRINTF_ERROR ("The attempt to allocate memory for the stack buf failed. "
+                       "Please, try smaller maximum size\n");
+        return 1;
     }
 
 #ifdef DEBUG
-    *((long *)(stk->data)) = CANARY;
-    *((long *)_StackGetIthPointer(max, stk->data)) = CANARY;
+    *((canary_t *)(stk->data))                         = CANARY;
+    *((canary_t *)_StackGetIthPointer(max, stk->data)) = CANARY;
 
-    for (int i = 0; i < max; i++)
+    for (size_t i = 0; i < max; i++)
         *_StackGetIthPointer (i, stk->data) = POISON;
 
 
@@ -233,7 +265,6 @@ int _StackConstruct (Stack_t *stk, const char *name, int max) {
 #endif
 
     return 0;
-
 }
 
 
@@ -241,16 +272,18 @@ void _StackFree (Stack_t *stk) {
 
     assert (stk);
 
-    if (stk->name != NULL)
+    if (stk->name != nullptr)
         free (stk->name);
 
-    if (stk->data != NULL)
+    if (stk->data != nullptr)
         free (stk->data);
 
     free (stk);
 }
 
-int _StackResize (Stack_t *stk, int newSize) {
+int _StackResize(
+        Stack_t *stk,
+        size_t   newSize) {
 #ifdef DEBUG
     STACK_OK (stk);
 #else
@@ -259,29 +292,29 @@ int _StackResize (Stack_t *stk, int newSize) {
 
 
     if (newSize < stk->size) {
-        printf ("Invalid newSize>: %d\n", newSize);
+        FPRINTF_ERROR ("Invalid newSize>: %zu\n", newSize);
         return 1;
     }
 
 #ifdef DEBUG
-    stk->data = (elem_t *)realloc (stk->data, 2 * sizeof (CANARY) + newSize * sizeof (elem_t));
+    stk->data = (elem_t *)realloc (stk->data, 2 * sizeof (CANARY) + newSize * sizeof (*(stk->data)));
 #else
-    stk->data = (elem_t *)realloc (stk->data, newSize * sizeof (elem_t));
+    stk->data = (elem_t *)realloc (stk->data, newSize * sizeof (*(stk->data)));
 #endif
 
 
-    if (stk->data == NULL) {
-        printf ("The attempt to reallocate memory for the stack buf failed.\n");
+    if (stk->data == nullptr) {
+        FPRINTF_ERROR ("The attempt to reallocate memory for the stack buf failed.\n");
         return 1;
     }
 
     stk->maxSize = newSize;
 
 #ifdef DEBUG
-    for (int i = stk->size; i < stk->maxSize; i++)
+    for (size_t i = stk->size; i < stk->maxSize; i++)
         *_StackGetIthPointer(i, stk->data) = POISON;
 
-    *((long *)_StackGetIthPointer(stk->maxSize, stk->data)) = CANARY;
+    *((canary_t *)_StackGetIthPointer(stk->maxSize, stk->data)) = CANARY;
 
     stk->hash = _StackGetHash(stk);
 
@@ -330,10 +363,10 @@ int StackPop(Stack_t *stk, elem_t *elem) {
     assert(stk);
 #endif
 
-    assert(elem);
+    assert (elem);
 
     if (stk->size == 0) {
-        printf("Unable to pop: stack is empty\n");
+        FPRINTF_ERROR("Unable to pop: stack is empty\n");
         return 1;
     }
 
@@ -350,7 +383,6 @@ int StackPop(Stack_t *stk, elem_t *elem) {
 
     STACK_OK(stk);
 #endif
-
     return 0;
 }
 
